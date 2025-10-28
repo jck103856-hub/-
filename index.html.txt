@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>MiC 부스 | 가위바위보</title>
+  <style>
+    :root{
+      --bg:#0f1220; --card:#171a2b; --ink:#e8ecff; --sub:#9aa4d2; --pri:#6aa7ff; --win:#5be36a; --lose:#ff6b6b; --draw:#ffc85b;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,Apple Color Emoji,Segoe UI Emoji;
+      background: linear-gradient(180deg,#0d0f1a 0%,#121636 100%); color:var(--ink); display:flex; align-items:center; justify-content:center}
+    .wrap{width:min(840px,100%); padding:16px}
+    .card{background:var(--card); border-radius:20px; padding:18px; box-shadow:0 10px 40px rgba(0,0,0,.35)}
+    h1{font-size: clamp(1.3rem, 2.3vw + 1rem, 2.2rem); margin:6px 0 2px}
+    .muted{color:var(--sub); font-size:.95rem}
+    .row{display:flex; gap:12px; align-items:center}
+    .col{display:flex; flex-direction:column; gap:10px}
+    .grid{display:grid; gap:12px}
+    @media (min-width:720px){ .grid-2{grid-template-columns:1fr 1fr} }
+    .box{background:#0f1224; border:1px solid #242947; border-radius:16px; padding:12px}
+    .score{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px}
+    .score h2{margin:0; font-size:clamp(1.1rem,1.2rem + .6vw,1.8rem)}
+    .badge{padding:4px 10px; border-radius:999px; font-weight:700; font-size:.9rem; letter-spacing:.02em}
+    .b-win{background:rgba(91,227,106,.12); color:var(--win); border:1px solid rgba(91,227,106,.35)}
+    .b-lose{background:rgba(255,107,107,.12); color:var(--lose); border:1px solid rgba(255,107,107,.35)}
+    .b-draw{background:rgba(255,200,91,.12); color:var(--draw); border:1px solid rgba(255,200,91,.35)}
+
+    .choices{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+    button.choice{appearance:none; outline:0; border:0; padding:16px; border-radius:18px; background:#10132a; color:var(--ink);
+      border:1px solid #222856; font-size: clamp(1.05rem, 1.4vw + .9rem, 1.6rem); font-weight:800; letter-spacing:.02em;
+      display:flex; flex-direction:column; align-items:center; gap:6px; transition:transform .06s ease, box-shadow .12s ease}
+    button.choice:active{transform:scale(.98)}
+    .emo{font-size: clamp(2rem, 6vw, 3.2rem)}
+
+    .panel{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    .seg{background:#0f1224; border:1px solid #242947; border-radius:12px; padding:6px}
+    .seg button{background:transparent; border:0; color:var(--sub); padding:8px 12px; border-radius:8px; font-weight:700}
+    .seg button[aria-pressed="true"]{background:#1a1f40; color:var(--ink)}
+
+    .result{margin-top:10px; text-align:center; font-weight:900; letter-spacing:.02em}
+    .r-win{color:var(--win)} .r-lose{color:var(--lose)} .r-draw{color:var(--draw)}
+
+    .big{font-size: clamp(1.3rem, 1.6rem + 1vw, 2.3rem)}
+    .hint{font-size:.92rem; color:var(--sub)}
+    .foot{display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; color:var(--sub); font-size:.9rem}
+    .qr{opacity:.9}
+
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row" style="justify-content:space-between; align-items:flex-end; gap:8px">
+        <div>
+          <h1>MiC 부스 – 가위바위보</h1>
+          <div class="muted">라운드 먼저 <b>목표 점수</b>에 도달하면 승리! (동점 시 서든데스)</div>
+        </div>
+        <div class="panel">
+          <div class="seg" role="group" aria-label="목표 점수">
+            <button data-target="1">1</button>
+            <button data-target="3" aria-pressed="true">3</button>
+            <button data-target="5">5</button>
+            <button data-target="7">7</button>
+          </div>
+          <button id="reset" class="seg" title="게임 초기화"><span style="font-weight:800">↻ 재시작</span></button>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:10px">
+        <div class="box score">
+          <div class="col" style="align-items:center">
+            <h2>나</h2>
+            <div id="youPick" class="badge b-draw">–</div>
+          </div>
+          <div class="col" style="align-items:center">
+            <div class="muted">스코어</div>
+            <div id="score" class="big">0 : 0</div>
+            <div class="hint"><span id="need">3</span>점 선승</div>
+          </div>
+          <div class="col" style="align-items:center">
+            <h2>컴퓨터</h2>
+            <div id="cpuPick" class="badge b-draw">–</div>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="choices">
+            <button class="choice" data-choice="R"><div class="emo">🪨</div>바위</button>
+            <button class="choice" data-choice="P"><div class="emo">📄</div>보</button>
+            <button class="choice" data-choice="S"><div class="emo">✂️</div>가위</button>
+          </div>
+          <div id="result" class="result big"></div>
+        </div>
+      </div>
+
+      <div class="box" style="margin-top:12px">
+        <div class="row" style="justify-content:space-between; align-items:center">
+          <div class="hint">🎯 기준: 목표 점수에 먼저 도달하면 <b>도장</b> 지급. 1등 기록자는 운영진 확인.</div>
+          <button id="share" class="seg" title="현재 설정 공유">링크 공유</button>
+        </div>
+      </div>
+
+      <div class="foot" style="margin-top:10px">
+        <div>© Ajou Math MiC | 부스용 웹게임</div>
+        <div class="qr">설정 저장/공유: URL 파라미터 <code>?target=3</code></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const btns = document.querySelectorAll('button.choice');
+  const youPick = document.getElementById('youPick');
+  const cpuPick = document.getElementById('cpuPick');
+  const scoreEl = document.getElementById('score');
+  const resultEl = document.getElementById('result');
+  const needEl = document.getElementById('need');
+  const resetBtn = document.getElementById('reset');
+  const shareBtn = document.getElementById('share');
+  const targetSeg = document.querySelectorAll('.seg[role="group"] button');
+
+  const map = {R:'바위', P:'보', S:'가위'};
+  const badge = (cls, txt)=> `<span class="badge ${cls}">${txt}</span>`;
+  const pickBadgeClass = (x)=> ({R:'b-draw',P:'b-draw',S:'b-draw'})[x] || 'b-draw';
+
+  // read query
+  const params = new URLSearchParams(location.search);
+  let target = parseInt(params.get('target')||'3',10);
+  if (![1,3,5,7].includes(target)) target = 3;
+  syncTargetButtons(target);
+  needEl.textContent = target;
+
+  let you=0, cpu=0, locked=false;
+
+  function cpuChoice(){
+    const arr=['R','P','S'];
+    return arr[Math.floor(Math.random()*3)];
+  }
+  function decide(a,b){
+    if(a===b) return 0; // draw
+    if((a==='R'&&b==='S')||(a==='S'&&b==='P')||(a==='P'&&b==='R')) return 1; // you win
+    return -1; // you lose
+  }
+  function updateScore(){
+    scoreEl.textContent = `${you} : ${cpu}`;
+    if(you>=target && you-cpu>=1){
+      finish('승리! 도장 지급 😊', 'r-win');
+    }else if(cpu>=target && cpu-you>=1){
+      finish('패배… 다음 기회에 😅', 'r-lose');
+    }else if(you===target-1 && cpu===target-1){
+      resultEl.innerHTML = '<span class="r-draw">서든데스!</span>';
+    }
+  }
+  function finish(text, cls){
+    locked=true; resultEl.className='result big '+cls; resultEl.textContent=text;
+  }
+
+  btns.forEach(b=>b.addEventListener('click',()=>{
+    if(locked) return; // finished
+    const youC = b.dataset.choice;
+    const cpuC = cpuChoice();
+    youPick.innerHTML = badge(pickBadgeClass(youC), map[youC]);
+    cpuPick.innerHTML = badge(pickBadgeClass(cpuC), map[cpuC]);
+    const r = decide(youC, cpuC);
+    if(r===1){ you++; resultEl.className='result big r-win'; resultEl.textContent='이겼다!'; }
+    else if(r===-1){ cpu++; resultEl.className='result big r-lose'; resultEl.textContent='졌어요'; }
+    else { resultEl.className='result big r-draw'; resultEl.textContent='비겼다'; }
+    updateScore();
+  }));
+
+  resetBtn.addEventListener('click',()=>{ you=0; cpu=0; locked=false; scoreEl.textContent='0 : 0'; resultEl.textContent=''; youPick.innerHTML='–'; cpuPick.innerHTML='–'; });
+
+  function syncTargetButtons(t){
+    targetSeg.forEach(el=>{ el.setAttribute('aria-pressed', String(el.dataset.target==t)); });
+  }
+  targetSeg.forEach(el=> el.addEventListener('click',()=>{
+    target = parseInt(el.dataset.target,10); syncTargetButtons(target); needEl.textContent=target; const u=new URL(location.href); u.searchParams.set('target', String(target)); history.replaceState({},'',u);
+    resetBtn.click();
+  }));
+
+  shareBtn.addEventListener('click', async ()=>{
+    const url = location.href.split('#')[0];
+    try{ await navigator.clipboard.writeText(url); shareBtn.textContent='링크 복사됨'; setTimeout(()=>shareBtn.textContent='링크 공유',1400);}catch(e){ alert('링크: '+url); }
+  });
+})();
+</script>
+</body>
+</html>
